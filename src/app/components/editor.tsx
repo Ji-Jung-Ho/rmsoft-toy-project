@@ -58,6 +58,8 @@ export default function Editor({ selecNoteBookIdx, memoList, screenMode }: NoteE
 
   const selectedNote = useMemo(() => memoList.find((item: Note) => item.idx === selecNoteBookIdx), [memoList, selecNoteBookIdx]);
 
+  const selectMemo = useMemo(() => memoList.find((item: Note) => item.idx === selecNoteBookIdx), [memoList, selecNoteBookIdx]);
+
   // 애디터 초기 상태를 설정
   const CONTENT = JSON.stringify({
     root: {
@@ -130,14 +132,16 @@ export default function Editor({ selecNoteBookIdx, memoList, screenMode }: NoteE
             if (existingMemoIndex !== -1) {
               // 이미 존재하는 메모 업데이트
               noteBookList[updatedNoteIndex].memoList[existingMemoIndex] = {
+                // 노트북의 길이가 idx로 표시됨 => 메모의 길이가 나타나야함
                 memoidx: memoList.length,
                 memoSubTitle: newmemoSubTitle,
                 memoContent: newmemoContent,
               };
             } else {
+              // memo.memoidx !== memoidx;
               // 존재하지 않는 경우 새로운 메모 추가
               noteBookList[updatedNoteIndex].memoList.push({
-                memoidx: 1,
+                memoidx: memoList.length,
                 memoSubTitle: newmemoSubTitle,
                 memoContent: newmemoContent,
               });

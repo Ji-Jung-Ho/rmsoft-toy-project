@@ -50,8 +50,8 @@ export default function Page({ memoSubTitle, memoContent }: any) {
   // 메모 추가 모달 가시성 상태 변수
   const [isNoteAddModalOpen, setIsNoteAddModalOpen] = useState(false);
 
-  // 메모 삭제 모달 가시성 상태 변수
-  const [isNoteDeleteModalOpen, setIsNoteDeleteModalOpen] = useState(false);
+  // 노트북 삭제 모달 가시성 상태 변수
+  const [isNoteBookDeleteModal, setIsNoteBookDeleteModal] = useState(false);
 
   // 컨펌 모달 가시성 상태 변수
   const [isConfirmModal, setIsConfirmModal] = useState(false);
@@ -173,7 +173,7 @@ export default function Page({ memoSubTitle, memoContent }: any) {
 
   // 노트북 삭제 모달 열기
   const onClickOpenNoteBookDelModal = (idx: any) => {
-    setIsNoteDeleteModalOpen(true);
+    setIsNoteBookDeleteModal(true);
 
     // idx를 객체 형식으로 DeleteNote 로컬스토리지에 저장
     localStorage.setItem("DeleteNote", JSON.stringify({ idx }));
@@ -182,26 +182,47 @@ export default function Page({ memoSubTitle, memoContent }: any) {
     // console.log("memoList = ", memoList);
   };
 
-  //노트 삭제 모달 열기
-  const onClickOpenNoteDelModal = () => {};
+  //메모 삭제 이벤트
+  const onClickMemoDelete = (memoidx: number) => {
+    // Note 삭제 로직을 수행합니다.
+    // 이 함수에서는 삭제할 노트의 인덱스를 받아와서 필요한 로직을 수행한 후 메모리스트를 업데이트합니다.
+    const updatedMemoList = memoList.map((note: Note) => {
+      if (note.idx === selecNoteBookIdx) {
+        return {
+          ...note,
+          memoList: note.memoList.filter((memo) => memo.memoidx !== memoidx),
+        };
+      }
+      return note;
+    });
 
-  // 로컬에 저장된 데이터 삭제하는 클릭 이벤트
-  const onClickMemoDelete = () => {
+    // 로컬 스토리지와 상태를 업데이트합니다.
+    localStorage.setItem("noteBookList", JSON.stringify(updatedMemoList));
+    // setMemoList 함수를 사용하여 상태를 업데이트합니다.
+    setMemoList(updatedMemoList);
+  };
+
+  // 노트북 삭제 이벤트
+  const onClickNoteBookDelete = () => {
     const noteToDelete = JSON.parse(localStorage.getItem("DeleteNote") || "{}");
     const updatedMemoList = memoList.filter((memo) => memo.idx !== noteToDelete.idx);
 
     localStorage.setItem("noteBookList", JSON.stringify(updatedMemoList));
     setMemoList(updatedMemoList);
 
-    onClickCloseNoteDelModal();
+    onClickCloseNoteBookDelModal();
 
     // console.log(noteToDelete.id);
     // console.log(updatedMemoList);
   };
 
   // 노트 삭제 모달 닫기
-  const onClickCloseNoteDelModal = () => {
-    setIsNoteDeleteModalOpen(false);
+  const onClickCloseNoteBookDelModal = () => {
+    setIsNoteBookDeleteModal(false);
+  };
+  // 메모 삭제 모달 닫기
+  const onClickCloseMemoDelModal = () => {
+    setIsNoteBookDeleteModal(false);
   };
 
   const addNewMemo = () => {
@@ -220,7 +241,7 @@ export default function Page({ memoSubTitle, memoContent }: any) {
         if (memo.idx === selecNoteBookIdx) {
           const memoList = Array.isArray(memo.memoList) ? memo.memoList : [];
 
-          // console.log("memo.memoList", memo.memoList);
+          console.log("memo.memoList", memo.memoList);
           const newMemo = {
             memoidx: memo.memoList.length + 1,
             memosubtitle: memoSubTitle,
@@ -275,7 +296,7 @@ export default function Page({ memoSubTitle, memoContent }: any) {
     <>
       <div
         className={`min-w-[1400px] max-w-[1920px] h-[100vh] dark:bg-gray-800  ${isNoteAddModalOpen ? "blur-sm" : ""} || ${
-          isNoteDeleteModalOpen ? "blur-sm" : ""
+          isNoteBookDeleteModal ? "blur-sm" : ""
         } || ${isConfirmModal ? "blur-sm" : ""}`}
       >
         <header className="border-r-2 ">
@@ -540,13 +561,7 @@ export default function Page({ memoSubTitle, memoContent }: any) {
                   ""
                 )}
                 {isNoteBookMemoComponent ? (
-                  <NoteBookMemo
-                    selecNoteBookIdx={selecNoteBookIdx}
-                    memoList={memoList}
-                    onClickNoteBookDetail={onClickNoteBookDetail}
-                    screenMode={screenMode}
-                    onClickOpenNoteDelModal={onClickOpenNoteDelModal}
-                  />
+                  <NoteBookMemo selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} />
                 ) : (
                   ""
                 )}
@@ -572,7 +587,7 @@ export default function Page({ memoSubTitle, memoContent }: any) {
         </main>
       </div>
       {isNoteAddModalOpen && <NoteAddModal onClickCloseNoteAddModal={onClickCloseNoteAddModal} />}
-      {isNoteDeleteModalOpen && <NoteDeleteModal closeDelModal={onClickCloseNoteDelModal} memoTitleDelete={onClickMemoDelete} />}
+      {isNoteBookDeleteModal && <NoteDeleteModal closeDelModal={onClickCloseNoteBookDelModal} noteBookDelete={onClickNoteBookDelete} />}
       {isConfirmModal && <ConfirmModal onClickOpenNoteAddModal={onClickOpenNoteAddModal} handleCancel={handleCancel} />}
     </>
   );

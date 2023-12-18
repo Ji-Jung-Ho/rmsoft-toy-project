@@ -19,12 +19,28 @@ interface NoteDetailProps {
   memoList: Note[];
   onClickNoteBookDetail: any;
   screenMode: string;
-  onClickOpenNoteDelModal: any; // 메모장 삭제 모달 오픈
 }
 
-export default function NoteBookMemo({ selecNoteBookIdx, memoList, onClickNoteBookDetail, onClickOpenNoteDelModal, screenMode }: NoteDetailProps) {
+export default function NoteBookMemo({ selecNoteBookIdx, memoList, onClickNoteBookDetail, screenMode }: NoteDetailProps) {
   const selectedNote = memoList.find((item: Note) => item.idx === selecNoteBookIdx);
   // const selectedNote = memoList.find((item: Note) => item.memoList.memoidx === selecNoteBookIdx);
+
+  const handleDeleteNote = (memoidx: number) => {
+    // Note 삭제 로직을 수행합니다.
+    const updatedMemoList = memoList.map((note: Note) => {
+      if (note.idx === selecNoteBookIdx) {
+        return {
+          ...note,
+          memoList: note.memoList.filter((memo) => memo.memoidx !== memoidx),
+        };
+      }
+      return note;
+    });
+
+    // 로컬 스토리지와 상태를 업데이트합니다.
+    localStorage.setItem("noteBookList", JSON.stringify(updatedMemoList));
+    // setMemoList 함수를 사용하여 상태를 업데이트합니다.
+  };
 
   return (
     <>
@@ -50,14 +66,14 @@ export default function NoteBookMemo({ selecNoteBookIdx, memoList, onClickNoteBo
             <li key={subIdx} className={`hover:bg-blue-100 dark:hover:bg-gray-100 dark:text-white ${subMainLi}`}>
               <button className="w-full h-full dark:hover:text-black" onClick={() => onClickNoteBookDetail(selecNoteBookIdx)}>
                 <div className="">
-                  <h2 className="flex items-center justify-between font-bold text-left text-[20px] truncate pb-6">
+                  <h2 className="flex items-center justify-between font-bold text-left text-[20px] truncate pb-6 w-[200px]">
                     {subMemoList.memoSubTitle ? subMemoList.memoSubTitle : "New Note"}
-                    <button onClick={() => onClickOpenNoteDelModal(subMemoList.memoidx)}>
+                    <button onClick={() => handleDeleteNote(subMemoList.memoidx)}>
                       <Image src="/img/delete.png" alt="delete-img" width={24} height={24} />
                     </button>
                   </h2>
                   <p className="truncate text-left">{subMemoList.memoContent ? subMemoList.memoContent : "No additional text"}</p>
-                  <button onClick={() => console.log("subMemoList.memoidx", subMemoList.memoidx)}>subMemoList.memoidx</button>
+                  {/* <button onClick={() => console.log("subMemoList.memoidx", subMemoList.memoidx)}>subMemoList.memoidx</button> */}
                 </div>
               </button>
             </li>
