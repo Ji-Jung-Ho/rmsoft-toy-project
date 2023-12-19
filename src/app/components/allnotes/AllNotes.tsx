@@ -15,7 +15,6 @@ interface Note {
 }
 
 interface AllNote {
-  selecNoteBookIdx: number;
   onClickNoteBookDetail: any;
   memoList: Note[];
   screenMode: string;

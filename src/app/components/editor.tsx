@@ -47,18 +47,18 @@ interface Note {
 }
 
 interface NoteEditorProps {
-  selecNoteBookIdx: number;
+  selectMemoIdx: number;
   memoList: Note[];
   screenMode: string;
 }
 
-export default function Editor({ selecNoteBookIdx, memoList, screenMode }: NoteEditorProps) {
-  const [memoSubTitle, setmemoSubTitle] = useState("");
-  const [memoContent, setmemoContent] = useState("");
+export default function Editor({ selectMemoIdx, memoList, screenMode }: NoteEditorProps) {
+  const [memoSubTitle, setMemoSubTitle] = useState("");
+  const [memoContent, setMemoContent] = useState("");
 
-  const selectedNote = useMemo(() => memoList.find((item: Note) => item.idx === selecNoteBookIdx), [memoList, selecNoteBookIdx]);
+  const selectedNote = useMemo(() => memoList.find((item: Note) => item.idx === selectMemoIdx), [memoList, selectMemoIdx]);
 
-  const selectMemo = useMemo(() => memoList.find((item: Note) => item.idx === selecNoteBookIdx), [memoList, selecNoteBookIdx]);
+  const selectMemo = useMemo(() => memoList.find((item: Note) => item.idx === selectMemoIdx), [memoList, selectMemoIdx]);
 
   // 애디터 초기 상태를 설정
   const CONTENT = JSON.stringify({
@@ -115,44 +115,37 @@ export default function Editor({ selecNoteBookIdx, memoList, screenMode }: NoteE
         const newmemoSubTitle = lines[0];
         const newmemoContent = lines.slice(1).join("\n");
 
-        setmemoSubTitle(newmemoSubTitle);
-        setmemoContent(newmemoContent);
-
-        //TODO: 새로운 노트를 추가 할 수 있는데, 노트를 개별적으로 에디터를 불러오지 못함
+        setMemoSubTitle(newmemoSubTitle);
+        setMemoContent(newmemoContent);
 
         if (selectedNote) {
           const noteBookList = JSON.parse(localStorage.getItem("noteBookList") || "");
 
-          const updatedNoteIndex = noteBookList.findIndex((note: Note) => note.idx === selecNoteBookIdx);
+          // idx를 비교해서
 
-          if (updatedNoteIndex !== -1) {
-            // memoIdx가 같은 메모가 이미 존재하는지 확인
-            const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex((memo: any) => memo.memoidx === memo.memoidx);
+          const updatedNoteIndex = noteBookList.findIndex((note: Note) => note.idx === selectMemoIdx);
 
-            if (existingMemoIndex !== -1) {
-              // 이미 존재하는 메모 업데이트
-              noteBookList[updatedNoteIndex].memoList[existingMemoIndex] = {
-                // 노트북의 길이가 idx로 표시됨 => 메모의 길이가 나타나야함
-                memoidx: memoList.length,
-                memoSubTitle: newmemoSubTitle,
-                memoContent: newmemoContent,
-              };
-            } else {
-              // memo.memoidx !== memoidx;
-              // 존재하지 않는 경우 새로운 메모 추가
-              noteBookList[updatedNoteIndex].memoList.push({
-                memoidx: memoList.length,
-                memoSubTitle: newmemoSubTitle,
-                memoContent: newmemoContent,
-              });
-            }
-            console.log("editor", memoList);
-          }
+          console.log("updatedNoteIndex", updatedNoteIndex);
+          console.log("selectMemoIdx", selectMemoIdx);
 
-          console.log("noteBookList[updatedNoteIndex]", noteBookList[updatedNoteIndex]);
+          // if (updatedNoteIndex !== -1) {
+          //   const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex(
+          //     (memo: any) => memo.memoidx === noteBookList[updatedNoteIndex].memoList.length
+          //   );
 
-          // 수정된 noteList로 로컬 스토리지 업데이트
-          if (noteBookList[0].memoSubTitle !== "" || noteBookList[0].memoContent !== "") {
+          //   // const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex((memo: any) => memo.memoidx === selectedNote?.memoList?.[0]?.memoidx);
+
+          //   if (existingMemoIndex !== -1) {
+          //     // 이미 존재하는 메모 업데이트
+          //     noteBookList[updatedNoteIndex].memoList[existingMemoIndex] = {
+          //       memoidx: selectedNote?.memoList?.[0]?.memoidx,
+          //       memoSubTitle: newmemoSubTitle,
+          //       memoContent: newmemoContent,
+          //     };
+          //   }
+          // }
+
+          if (noteBookList[updatedNoteIndex].memoList.length !== 0) {
             localStorage.setItem("noteBookList", JSON.stringify(noteBookList));
           }
         }

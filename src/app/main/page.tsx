@@ -182,26 +182,6 @@ export default function Page({ memoSubTitle, memoContent }: any) {
     // console.log("memoList = ", memoList);
   };
 
-  //메모 삭제 이벤트
-  const onClickMemoDelete = (memoidx: number) => {
-    // Note 삭제 로직을 수행합니다.
-    // 이 함수에서는 삭제할 노트의 인덱스를 받아와서 필요한 로직을 수행한 후 메모리스트를 업데이트합니다.
-    const updatedMemoList = memoList.map((note: Note) => {
-      if (note.idx === selecNoteBookIdx) {
-        return {
-          ...note,
-          memoList: note.memoList.filter((memo) => memo.memoidx !== memoidx),
-        };
-      }
-      return note;
-    });
-
-    // 로컬 스토리지와 상태를 업데이트합니다.
-    localStorage.setItem("noteBookList", JSON.stringify(updatedMemoList));
-    // setMemoList 함수를 사용하여 상태를 업데이트합니다.
-    setMemoList(updatedMemoList);
-  };
-
   // 노트북 삭제 이벤트
   const onClickNoteBookDelete = () => {
     const noteToDelete = JSON.parse(localStorage.getItem("DeleteNote") || "{}");
@@ -218,10 +198,6 @@ export default function Page({ memoSubTitle, memoContent }: any) {
 
   // 노트 삭제 모달 닫기
   const onClickCloseNoteBookDelModal = () => {
-    setIsNoteBookDeleteModal(false);
-  };
-  // 메모 삭제 모달 닫기
-  const onClickCloseMemoDelModal = () => {
     setIsNoteBookDeleteModal(false);
   };
 
@@ -291,6 +267,8 @@ export default function Page({ memoSubTitle, memoContent }: any) {
       document.documentElement.classList.add("dark");
     }
   }, []);
+
+  const selectedMemo = memoList.find((item: Note) => item.idx === selectMemoIdx);
 
   return (
     <>
@@ -555,33 +533,43 @@ export default function Page({ memoSubTitle, memoContent }: any) {
                 {isUncategoriedComponent ? <Uncategorized /> : ""}
                 {isTodoComponent ? <Todo /> : ""}
                 {isUnsyncedComponent ? <Unsynced /> : ""}
-                {isAllNotesComponent ? (
-                  <AllNotes selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} />
-                ) : (
-                  ""
-                )}
+                {isAllNotesComponent ? <AllNotes memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} /> : ""}
                 {isNoteBookMemoComponent ? (
-                  <NoteBookMemo selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} />
+                  <NoteBookMemo selectMemoIdx={selectMemoIdx} memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} />
                 ) : (
                   ""
                 )}
               </aside>
               {/* 에디터 */}
+              {/* <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> */}
 
               {/* 노트북안에 있는 메모리스트를 불러옴 */}
               {/* 노트북 idx를 비교하여 선택한 idx의 memolist의 memoidx를 보여줌 */}
-              {memoList.map((memo: any, idx) =>
+              {/* {memoList.map((memo: any, idx) =>
                 isNoteBookMemoComponent && selecNoteBookIdx === memo.idx ? (
-                  <Editor key={idx} selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} />
+                  <Editor key={idx} selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} />
                 ) : (
                   ""
                 )
-              )}
+              )} */}
+              {/*selectedMemo를 해야 memo.memoidx의 값이 나옴 */}
+              {selectedMemo?.memoList.map((memo: any, idx) => {
+                // 현재 메모의 memoidx가 selectMemoIdx와 같은지 확인
+                const isSelectedMemo = isNoteBookMemoComponent && selectMemoIdx === memo.memoidx;
 
-              {isAllNotesComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
-              {isUncategoriedComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
-              {isTodoComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
-              {isUnsyncedComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+                return isSelectedMemo ? (
+                  <Editor key={idx} selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} />
+                ) : // 메모를 클릭했을 때 해당 메모의 memoidx 출력
+                // <div key={idx} onClick={() => console.log(memo.memoidx)}>
+                //   Click to view Editor for Memo {memo.memoidx}
+                // </div>
+                null;
+              })}
+
+              {isAllNotesComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {isUncategoriedComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {isTodoComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {isUnsyncedComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
             </div>
           )}
         </main>
