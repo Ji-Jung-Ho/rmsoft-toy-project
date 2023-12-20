@@ -25,7 +25,7 @@ interface Note {
   }>;
 }
 
-export default function Page({ memoSubTitle, memoContent }: any) {
+export default function Page() {
   // 사이드 메뉴 클릭 상태 변수
   const [isAllNotesVisible, setAllNotesVisible] = useState(true);
   const [isNoteBooks, setIsNoteBooks] = useState(true);
@@ -60,13 +60,16 @@ export default function Page({ memoSubTitle, memoContent }: any) {
   const [memoList, setMemoList] = useState<Note[]>([]);
 
   // 내가 선택한 노트북의 idx
-  const [selecNoteBookIdx, setSelecNoteBookIdx] = useState(0);
+  const [selectNoteBookIdx, setselectNoteBookIdx] = useState(0);
 
   // 선택한 노트의 idx
   const [selectMemoIdx, setSelectMemoIdx] = useState(0);
 
   // 다크모드 설정 상태 변수
   const [screenMode, SetScreenMode] = useState("nomal");
+
+  // NoteBooksList
+  const [noteList, setNoteList] = useState([]);
 
   // Menu 토글 이벤트
   const AllNotesToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -150,9 +153,19 @@ export default function Page({ memoSubTitle, memoContent }: any) {
     setIsTodoComponent(false);
     setIsAllNotesComponent(false);
 
+    // idx = notebooklist의 idx
+    setselectNoteBookIdx(idx);
+  };
+
+  const onClickMemoDetail = (idx: any) => {
+    setIsNoteBookMemoComponent(true);
+    setIsNoteBookComponent(false);
+    setIsUnsyncedComponent(false);
+    setIsUncategoriedComponent(false);
+    setIsTodoComponent(false);
+    setIsAllNotesComponent(false);
     setSelectMemoIdx(idx);
-    setSelecNoteBookIdx(idx);
-    // console.log(idx);
+    console.log(noteList);
   };
   // const handleAllNotesLinkClick = () => {
   // };
@@ -213,19 +226,33 @@ export default function Page({ memoSubTitle, memoContent }: any) {
       setIsConfirmModal(true);
     } else {
       // 선택된 노트북의 인덱스를 찾아서 해당 노트북의 subMemoList에 새로운 메모를 추가
-      const updatedMemoList = storedMemoList.map((memo: any) => {
-        if (memo.idx === selecNoteBookIdx) {
-          const memoList = Array.isArray(memo.memoList) ? memo.memoList : [];
+      const updatedMemoList = storedMemoList.map((notebook: any) => {
+        if (notebook.idx === selectNoteBookIdx) {
+          const memoList = Array.isArray(notebook.memoList) ? notebook.memoList : [];
 
-          console.log("memo.memoList", memo.memoList);
-          const newMemo = {
-            memoidx: memo.memoList.length + 1,
-            memosubtitle: memoSubTitle,
-            memocontent: memoContent,
-          };
-          return { ...memo, memoList: [newMemo, ...memoList] };
+          if (memoList[0]) {
+            console.log(11, memoList[0].memoContent);
+            console.log(22, memoList[0].memoSubTitle);
+            if (!memoList[0].memoSubTitle && !memoList[0].memoContent) {
+              return notebook;
+            } else {
+              const newMemo = {
+                memoidx: memoList.length + 1,
+                memoSubTitle: "",
+                memoContent: "",
+              };
+              return { ...notebook, memoList: [newMemo, ...memoList] };
+            }
+          } else {
+            const newMemo = {
+              memoidx: memoList.length + 1,
+              memoSubTitle: "",
+              memoContent: "",
+            };
+            return { ...notebook, memoList: [newMemo, ...memoList] };
+          }
         }
-        return memo;
+        return notebook;
       });
 
       // 로컬 스토리지와 상태를 업데이트
@@ -267,8 +294,6 @@ export default function Page({ memoSubTitle, memoContent }: any) {
       document.documentElement.classList.add("dark");
     }
   }, []);
-
-  const selectedMemo = memoList.find((item: Note) => item.idx === selectMemoIdx);
 
   return (
     <>
@@ -461,14 +486,13 @@ export default function Page({ memoSubTitle, memoContent }: any) {
                       {/* 내가 입력한 메모가 저장되야함 */}
                       {memoList.map((item, idx) => (
                         <li style={NoteBooksMenu} key={idx} className="py-2 pl-6 pr-4 h-[40px] hover:bg-gray-100 justify-between dark:hover:text-black">
-                          <a
-                            href="#!"
+                          <div
                             onClick={() => onClickNoteBookDetail(item.idx)}
                             // onClick={() => console.log(idx)}
                             className={`truncate ${NotoBookNaviBarOption}`}
                           >
                             {item.title}
-                          </a>
+                          </div>
                           <button onClick={() => onClickOpenNoteBookDelModal(item.idx)}>
                             <Image src="/img/delete.png" alt="delete-img" width={24} height={24} />
                           </button>
@@ -522,12 +546,17 @@ export default function Page({ memoSubTitle, memoContent }: any) {
             </div>
           </aside>
           {isNoteBookComponent ? (
-            <NoteBook isMenuOpen={isMenuOpen} onClickNoteBookDetail={onClickNoteBookDetail} memoList={memoList} />
+            <NoteBook
+              onClickOpenNoteAddModal={onClickOpenNoteAddModal}
+              isMenuOpen={isMenuOpen}
+              onClickNoteBookDetail={onClickNoteBookDetail}
+              memoList={memoList}
+            />
           ) : (
             <div
-              className={`w-full flex ${
+              className={`min-w-[1400px] max-w-[1920px] flex ${
                 isMenuOpen ? "" : "translate-x-[-250px]"
-              } transition-transform duration-500 ease-in-out z-3 bg-white w-full flex  dark:bg-gray-800`}
+              } transition-transform duration-500 ease-in-out z-3 bg-white w-full flex dark:bg-gray-800`}
             >
               <aside id="subMain" className="min-w-[250px] max-w-[250px] border-y-2 border-bg-gray-200">
                 {isUncategoriedComponent ? <Uncategorized /> : ""}
@@ -535,41 +564,39 @@ export default function Page({ memoSubTitle, memoContent }: any) {
                 {isUnsyncedComponent ? <Unsynced /> : ""}
                 {isAllNotesComponent ? <AllNotes memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} /> : ""}
                 {isNoteBookMemoComponent ? (
-                  <NoteBookMemo selectMemoIdx={selectMemoIdx} memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} />
+                  <NoteBookMemo
+                    selectNoteBookIdx={selectNoteBookIdx}
+                    memoList={memoList}
+                    onClickMemoDetail={onClickMemoDetail}
+                    screenMode={screenMode}
+                    setNoteList={setNoteList}
+                  />
                 ) : (
                   ""
                 )}
               </aside>
-              {/* 에디터 */}
-              {/* <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> */}
-
-              {/* 노트북안에 있는 메모리스트를 불러옴 */}
-              {/* 노트북 idx를 비교하여 선택한 idx의 memolist의 memoidx를 보여줌 */}
-              {/* {memoList.map((memo: any, idx) =>
-                isNoteBookMemoComponent && selecNoteBookIdx === memo.idx ? (
-                  <Editor key={idx} selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} />
-                ) : (
-                  ""
-                )
-              )} */}
-              {/*selectedMemo를 해야 memo.memoidx의 값이 나옴 */}
-              {selectedMemo?.memoList.map((memo: any, idx) => {
-                // 현재 메모의 memoidx가 selectMemoIdx와 같은지 확인
-                const isSelectedMemo = isNoteBookMemoComponent && selectMemoIdx === memo.memoidx;
-
-                return isSelectedMemo ? (
-                  <Editor key={idx} selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} />
-                ) : // 메모를 클릭했을 때 해당 메모의 memoidx 출력
-                // <div key={idx} onClick={() => console.log(memo.memoidx)}>
-                //   Click to view Editor for Memo {memo.memoidx}
-                // </div>
-                null;
-              })}
-
-              {isAllNotesComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
-              {isUncategoriedComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
-              {isTodoComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
-              {isUnsyncedComponent ? <Editor selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {selectNoteBookIdx ? (
+                // 선택한 노트북이 있는 경우
+                memoList
+                  .filter((notebook) => notebook.idx === selectNoteBookIdx)
+                  .map((selectedNotebook, idx) =>
+                    selectedNotebook.memoList.length > 0 ? (
+                      // 선택한 노트북에 노트가 있는 경우
+                      <Editor key={idx} selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} noteList={noteList} />
+                    ) : (
+                      // 선택한 노트북에 노트가 없는 경우
+                      <div className="w-full h-full flex items-center justify-center flex-col border-2 text-center" key={idx}>
+                        <p className="mt-[8px] text-gray-500">Have a thoyght to jot down? Tap on the button below.</p>
+                        <button className="mt-[8px] px-4 py-2 border-0 font-bold text-blue-400 hover:text-blue-700" onClick={addNewMemo}>
+                          New Note
+                        </button>
+                      </div>
+                    )
+                  )
+              ) : (
+                // 선택한 노트북이 없는 경우
+                <Editor selectMemoIdx={-1} memoList={memoList} screenMode={screenMode} noteList={noteList} />
+              )}
             </div>
           )}
         </main>

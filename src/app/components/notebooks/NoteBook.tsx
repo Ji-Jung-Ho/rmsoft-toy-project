@@ -16,10 +16,11 @@ interface Note {
 interface NoteBookProps {
   isMenuOpen: boolean;
   onClickNoteBookDetail: any;
+  onClickOpenNoteAddModal: any;
   memoList: Note[];
 }
 
-export default function NoteBook({ isMenuOpen, onClickNoteBookDetail, memoList }: NoteBookProps) {
+export default function NoteBook({ isMenuOpen, onClickNoteBookDetail, memoList, onClickOpenNoteAddModal }: NoteBookProps) {
   return (
     <div
       id="notebookcompont"
@@ -56,15 +57,24 @@ export default function NoteBook({ isMenuOpen, onClickNoteBookDetail, memoList }
         </div>
       </div>
       <div className="w-full h-full">
-        <ul className="dark:text-white">
-          {memoList.map((item, idx) => (
-            <li key={idx} className="pl-4 border-b-2 h-[50px] hover:bg-gray-200 dark:border-b-[1px]">
-              <button className="w-full h-full flex items-center truncate " onClick={() => onClickNoteBookDetail(item.idx)}>
-                {item.title}
-              </button>
-            </li>
-          ))}
-        </ul>
+        {memoList.length === 0 ? (
+          <div className="w-full h-full flex flex-col items-center justify-center">
+            <p className="text-center text-gray-500 dark:text-white">You can organize notes of same topic into notebooks.</p>
+            <button className="mt-[8px] px-4 py-2 border-0 font-bold text-blue-400 hover:text-blue-700" onClick={onClickOpenNoteAddModal}>
+              Create New Notebook
+            </button>
+          </div>
+        ) : (
+          <ul className="dark:text-white">
+            {memoList.map((item, idx) => (
+              <li key={idx} className="pl-4 border-b-2 h-[50px] hover:bg-gray-200 dark:border-b-[1px]">
+                <button className="w-full h-full flex items-center truncate" onClick={() => onClickNoteBookDetail(item.idx)}>
+                  {item.title}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { subMainLi } from "@/app/styles/style";
 import Editor from "../editor";
@@ -16,18 +16,23 @@ interface Note {
 }
 
 interface NoteDetailProps {
-  selectMemoIdx: number | null;
+  selectNoteBookIdx: number | null;
   memoList: Note[];
-  onClickNoteBookDetail: any;
+  onClickMemoDetail: any;
   screenMode: string;
+  setNoteList: any;
 }
 
-export default function NoteBookMemo({ selectMemoIdx, memoList, onClickNoteBookDetail, screenMode }: NoteDetailProps) {
-  const selectedNote = memoList.find((item: Note) => item.idx === selectMemoIdx);
+export default function NoteBookMemo({ selectNoteBookIdx, memoList, onClickMemoDetail, screenMode, setNoteList }: NoteDetailProps) {
+  const selectedNotebook = memoList.find((item: Note) => item.idx === selectNoteBookIdx);
+
+  useEffect(() => {
+    setNoteList(selectedNotebook?.memoList);
+  }, [setNoteList, selectedNotebook]);
 
   const onClickDeleteMemo = (memoidx: number) => {
     const updatedMemoList = memoList.map((note: Note) => {
-      if (note.idx === selectMemoIdx) {
+      if (note.idx === selectNoteBookIdx) {
         return {
           ...note,
           memoList: note.memoList.filter((memo) => memo.memoidx !== memoidx),
@@ -42,7 +47,7 @@ export default function NoteBookMemo({ selectMemoIdx, memoList, onClickNoteBookD
   return (
     <>
       <div className="flex justify-between items-center bg-gray-100 h-[40px] dark:bg-gray-800 dark:border-b-[1px]">
-        {selectedNote ? <h2 className="ml-4 truncate dark:text-white">{selectedNote.title}</h2> : <h2 className="ml-4 truncate">Select a Note</h2>}
+        {selectedNotebook ? <h2 className="ml-4 truncate dark:text-white">{selectedNotebook.title}</h2> : <h2 className="ml-4 truncate">Select a Note</h2>}
         <Image src={screenMode === "dark" ? "/img/darkmode/option-white.png" : "/img/option.png"} alt="option-img" className="mr-4 " width={24} height={24} />
       </div>
       <ul
@@ -58,17 +63,25 @@ export default function NoteBookMemo({ selectMemoIdx, memoList, onClickNoteBookD
         hover:dark:scrollbar-white 
         hover:dark:scrollbar-thumb-rounded-full"
       >
-        {selectedNote &&
-          selectedNote.memoList &&
-          selectedNote.memoList.length > 0 &&
-          selectedNote.memoList.map((subMemoList, subIdx) => (
+        {selectedNotebook &&
+          selectedNotebook.memoList &&
+          selectedNotebook.memoList.length > 0 &&
+          selectedNotebook.memoList.map((subMemoList, subIdx) => (
             <li key={subIdx} className={`hover:bg-blue-100 dark:hover:bg-gray-100 dark:text-white ${subMainLi}`}>
               <button
                 className="w-full h-full dark:hover:text-black"
-                /* onClick={() => onClickNoteBookDetail(selecNoteBookIdx)} */ onClick={() => console.log("subMemoList.memoidx", subMemoList.memoidx)}
+                onClick={() => {
+                  onClickMemoDetail(subMemoList.memoidx);
+                }}
               >
                 <div className="">
-                  <button className="float-right" onClick={() => onClickDeleteMemo(subMemoList.memoidx)}>
+                  <button
+                    className="float-right"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClickDeleteMemo(subMemoList.memoidx);
+                    }}
+                  >
                     <Image src="/img/delete.png" alt="delete-img" width={24} height={24} />
                   </button>
                   <h2 className="font-bold text-left text-[20px] pb-6 truncate">{subMemoList.memoSubTitle ? subMemoList.memoSubTitle : "New Note"}</h2>

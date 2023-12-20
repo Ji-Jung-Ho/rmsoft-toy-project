@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import Image from "next/image";
 import { LexicalComposer } from "@lexical/react/LexicalComposer";
 import { PlainTextPlugin } from "@lexical/react/LexicalPlainTextPlugin";
@@ -7,8 +7,7 @@ import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin";
 import LexicalErrorBoundary from "@lexical/react/LexicalErrorBoundary";
-import { EditorState, LexicalEditor } from "lexical";
-import { $getRoot, $getSelection } from "lexical";
+import { $getRoot } from "lexical";
 
 const theme = {
   // 테마 스타일링 설정
@@ -50,15 +49,15 @@ interface NoteEditorProps {
   selectMemoIdx: number;
   memoList: Note[];
   screenMode: string;
+  noteList: {
+    memoSubTitle: string;
+    memoContent: string;
+    memoidx: number;
+  }[];
 }
 
-export default function Editor({ selectMemoIdx, memoList, screenMode }: NoteEditorProps) {
-  const [memoSubTitle, setMemoSubTitle] = useState("");
-  const [memoContent, setMemoContent] = useState("");
-
-  const selectedNote = useMemo(() => memoList.find((item: Note) => item.idx === selectMemoIdx), [memoList, selectMemoIdx]);
-
-  const selectMemo = useMemo(() => memoList.find((item: Note) => item.idx === selectMemoIdx), [memoList, selectMemoIdx]);
+export default function Editor({ selectMemoIdx, memoList, screenMode, noteList }: NoteEditorProps) {
+  const selectedNote = useMemo(() => memoList.find((item) => item.idx === selectMemoIdx), [memoList, selectMemoIdx]);
 
   // 애디터 초기 상태를 설정
   const CONTENT = JSON.stringify({
@@ -72,9 +71,9 @@ export default function Editor({ selectMemoIdx, memoList, screenMode }: NoteEdit
               mode: "normal",
               style: "",
               text:
-                selectedNote?.memoList?.[0]?.memoSubTitle && selectedNote?.memoList?.[0]?.memoContent
-                  ? `${selectedNote?.memoList?.[0]?.memoSubTitle}\n${selectedNote?.memoList?.[0]?.memoContent}`
-                  : selectedNote?.memoList?.[0]?.memoSubTitle || selectedNote?.memoList?.[0]?.memoContent || "",
+                noteList?.[0]?.memoSubTitle && noteList?.[0]?.memoContent
+                  ? `${noteList?.[0]?.memoSubTitle}\n${noteList?.[0]?.memoContent}`
+                  : noteList?.[0]?.memoSubTitle || noteList?.[0]?.memoContent || "",
               type: "text",
               version: 1,
             },
@@ -113,37 +112,66 @@ export default function Editor({ selectMemoIdx, memoList, screenMode }: NoteEdit
         const lines = root.__cachedText.split("\n");
 
         const newmemoSubTitle = lines[0];
-        const newmemoContent = lines.slice(1).join("\n");
-
-        setMemoSubTitle(newmemoSubTitle);
-        setMemoContent(newmemoContent);
+        const newmemoContent = lines.slice(1).join("\n") ?? "";
 
         if (selectedNote) {
           const noteBookList = JSON.parse(localStorage.getItem("noteBookList") || "");
 
           // idx를 비교해서
 
-          const updatedNoteIndex = noteBookList.findIndex((note: Note) => note.idx === selectMemoIdx);
+          const updatedNoteIndex = noteBookList.findIndex((note: Note) => note.idx === selectedNote.idx);
 
           console.log("updatedNoteIndex", updatedNoteIndex);
           console.log("selectMemoIdx", selectMemoIdx);
 
-          // if (updatedNoteIndex !== -1) {
-          //   const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex(
-          //     (memo: any) => memo.memoidx === noteBookList[updatedNoteIndex].memoList.length
-          //   );
+          if (updatedNoteIndex !== -1) {
+            const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex(
+              (memo: any) => memo.memoidx === noteBookList[updatedNoteIndex].memoList.length
+            );
 
-          //   // const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex((memo: any) => memo.memoidx === selectedNote?.memoList?.[0]?.memoidx);
+            // const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex((memo: any) => memo.memoidx === selectedNote?.memoList?.[0]?.memoidx);
 
-          //   if (existingMemoIndex !== -1) {
-          //     // 이미 존재하는 메모 업데이트
-          //     noteBookList[updatedNoteIndex].memoList[existingMemoIndex] = {
-          //       memoidx: selectedNote?.memoList?.[0]?.memoidx,
-          //       memoSubTitle: newmemoSubTitle,
-          //       memoContent: newmemoContent,
-          //     };
-          //   }
-          // }
+            if (existingMemoIndex !== -1) {
+              // 이미 존재하는 메모 업데이트
+              noteBookList[updatedNoteIndex].memoList[existingMemoIndex] = {
+                memoidx: noteList?.[0]?.memoidx,
+                memoSubTitle: newmemoSubTitle,
+                memoContent: newmemoContent,
+              };
+            }
+          }
+
+          if (noteBookList[updatedNoteIndex].memoList.length !== 0) {
+            localStorage.setItem("noteBookList", JSON.stringify(noteBookList));
+          }
+        }
+      } else {
+        if (selectedNote) {
+          const noteBookList = JSON.parse(localStorage.getItem("noteBookList") || "");
+
+          // idx를 비교해서
+
+          const updatedNoteIndex = noteBookList.findIndex((note: Note) => note.idx === selectedNote.idx);
+
+          console.log("updatedNoteIndex", updatedNoteIndex);
+          console.log("selectMemoIdx", selectMemoIdx);
+
+          if (updatedNoteIndex !== -1) {
+            const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex(
+              (memo: any) => memo.memoidx === noteBookList[updatedNoteIndex].memoList.length
+            );
+
+            // const existingMemoIndex = noteBookList[updatedNoteIndex].memoList.findIndex((memo: any) => memo.memoidx === selectedNote?.memoList?.[0]?.memoidx);
+
+            if (existingMemoIndex !== -1) {
+              // 이미 존재하는 메모 업데이트
+              noteBookList[updatedNoteIndex].memoList[existingMemoIndex] = {
+                memoidx: noteList?.[0]?.memoidx,
+                memoSubTitle: "",
+                memoContent: "",
+              };
+            }
+          }
 
           if (noteBookList[updatedNoteIndex].memoList.length !== 0) {
             localStorage.setItem("noteBookList", JSON.stringify(noteBookList));
@@ -154,99 +182,101 @@ export default function Editor({ selectMemoIdx, memoList, screenMode }: NoteEdit
   };
 
   return (
-    <div className="w-full border-2">
-      <div className="img-box flex justify-between p-2 bg-gray-100 dark:bg-gray-800 dark:border-b-[1px]">
-        <div className="flex justify-around w-[500px] ">
-          <button className="w-[24px] h-[24px]">
+    <>
+      <div className="w-full border-2">
+        <div className="img-box flex justify-between p-2 bg-gray-100 dark:bg-gray-800 dark:border-b-[1px]">
+          <div className="flex justify-around w-[500px] ">
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/check-list-white.png" : "/img/check-list.png"}
+                alt={screenMode === "dark" ? "check-list-white-img" : "check-list-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/image-white.png" : "/img/image.png"}
+                alt={screenMode === "dark" ? "image-white-img" : "image-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/plus-circle-white.png" : "/img/plus-circle.png"}
+                alt={screenMode === "dark" ? "plus-circle-white-img" : "plus-circle-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+            <Image src="/img/vbar.png" alt="vertical-bar-img" width={24} height={24} className="rotate-90 " />
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/pin-white.png" : "/img/pin.png"}
+                alt={screenMode === "dark" ? "pin-white-img" : "pin-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/star-white.png" : "/img/star.png"}
+                alt={screenMode === "dark" ? "star-white-img" : "star-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/share-white.png" : "/img/share.png"}
+                alt={screenMode === "dark" ? "share-white-img" : "share-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+            <button className="w-[24px] h-[24px]">
+              <Image
+                src={screenMode === "dark" ? "/img/darkmode/option-white.png" : "/img/option.png"}
+                alt={screenMode === "dark" ? "option-white-img" : "option-img"}
+                width={24}
+                height={24}
+                className=""
+              />
+            </button>
+          </div>
+          <button>
             <Image
-              src={screenMode === "dark" ? "/img/darkmode/check-list-white.png" : "/img/check-list.png"}
-              alt={screenMode === "dark" ? "check-list-white-img" : "check-list-img"}
+              src={screenMode === "dark" ? "/img/darkmode/maximize-white.png" : "/img/maximize.png"}
+              alt={screenMode === "dark" ? "maximize-white-img" : "maximize-img"}
               width={24}
               height={24}
-              className=""
-            />
-          </button>
-          <button className="w-[24px] h-[24px]">
-            <Image
-              src={screenMode === "dark" ? "/img/darkmode/image-white.png" : "/img/image.png"}
-              alt={screenMode === "dark" ? "image-white-img" : "image-img"}
-              width={24}
-              height={24}
-              className=""
-            />
-          </button>
-          <button className="w-[24px] h-[24px]">
-            <Image
-              src={screenMode === "dark" ? "/img/darkmode/plus-circle-white.png" : "/img/plus-circle.png"}
-              alt={screenMode === "dark" ? "plus-circle-white-img" : "plus-circle-img"}
-              width={24}
-              height={24}
-              className=""
-            />
-          </button>
-          <Image src="/img/vbar.png" alt="vertical-bar-img" width={24} height={24} className="rotate-90 " />
-          <button className="w-[24px] h-[24px]">
-            <Image
-              src={screenMode === "dark" ? "/img/darkmode/pin-white.png" : "/img/pin.png"}
-              alt={screenMode === "dark" ? "pin-white-img" : "pin-img"}
-              width={24}
-              height={24}
-              className=""
-            />
-          </button>
-          <button className="w-[24px] h-[24px]">
-            <Image
-              src={screenMode === "dark" ? "/img/darkmode/star-white.png" : "/img/star.png"}
-              alt={screenMode === "dark" ? "star-white-img" : "star-img"}
-              width={24}
-              height={24}
-              className=""
-            />
-          </button>
-          <button className="w-[24px] h-[24px]">
-            <Image
-              src={screenMode === "dark" ? "/img/darkmode/share-white.png" : "/img/share.png"}
-              alt={screenMode === "dark" ? "share-white-img" : "share-img"}
-              width={24}
-              height={24}
-              className=""
-            />
-          </button>
-          <button className="w-[24px] h-[24px]">
-            <Image
-              src={screenMode === "dark" ? "/img/darkmode/option-white.png" : "/img/option.png"}
-              alt={screenMode === "dark" ? "option-white-img" : "option-img"}
-              width={24}
-              height={24}
-              className=""
+              className="mr-2"
             />
           </button>
         </div>
-        <button>
-          <Image
-            src={screenMode === "dark" ? "/img/darkmode/maximize-white.png" : "/img/maximize.png"}
-            alt={screenMode === "dark" ? "maximize-white-img" : "maximize-img"}
-            width={24}
-            height={24}
-            className="mr-2"
-          />
-        </button>
+        <div className="w-full h-[96%] relative">
+          <LexicalComposer initialConfig={initialConfig}>
+            <PlainTextPlugin
+              contentEditable={<ContentEditable className="h-full p-4  focus:outline-none dark:bg-gray-800 dark:caret-white dark:text-white " />}
+              placeholder={
+                <div className="absolute top-[17px] left-[18px] text-gray-400">
+                  Type / for menu or <span className="font-bold underline">select from Templates</span>
+                </div>
+              }
+              ErrorBoundary={LexicalErrorBoundary}
+            />
+            <OnChangePlugin onChange={handleContentChange} />
+            <HistoryPlugin />
+          </LexicalComposer>
+        </div>
       </div>
-      <div className="w-full h-[96%] relative">
-        <LexicalComposer initialConfig={initialConfig}>
-          <PlainTextPlugin
-            contentEditable={<ContentEditable className="h-full p-4  focus:outline-none dark:bg-gray-800 dark:caret-white dark:text-white " />}
-            placeholder={
-              <div className="absolute top-[17px] left-[18px] text-gray-400">
-                Type / for menu or <span className="font-bold underline">select from Templates</span>
-              </div>
-            }
-            ErrorBoundary={LexicalErrorBoundary}
-          />
-          <OnChangePlugin onChange={handleContentChange} />
-          <HistoryPlugin />
-        </LexicalComposer>
-      </div>
-    </div>
+    </>
   );
 }
