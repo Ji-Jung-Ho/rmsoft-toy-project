@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { NotoBookNaviBarOption, commonNaviBarOption } from "@/app/styles/style";
 import AllNotes from "@/app/components/allnotes/AllNotes";
@@ -7,22 +7,22 @@ import Uncategorized from "@/app/components/allnotes/Uncategorized";
 import Todo from "@/app/components/allnotes/Todo";
 import Unsynced from "@/app/components/allnotes/Unsynced";
 import Editor from "@/app/components/editor";
-import NoteAddModal from "@/app/components/NoteAddModal";
+import NoteBookAddModal from "@/app/components/NoteBookAddModal";
 import NoteBook from "@/app/components/notebooks/NoteBook";
-import NoteDeleteModal from "../components/NoteBookDeleteModal";
-import NoteBookMemo from "../components/notebooks/NoteBookMemo";
+import NoteBookDeleteModal from "../components/NoteBookDeleteModal";
+import NoteDetail from "../components/notebooks/NoteDetail";
 import ConfirmModal from "../components/ConfirmModal";
 
 interface Note {
-  title: string;
   idx: number;
+  title: string;
   content: string;
-  subtitle: string;
-  memoList: Array<{
-    memoSubTitle: string;
-    memoContent: string;
-    memoidx: number;
-  }>;
+}
+
+interface NoteBook {
+  idx: number;
+  title: string;
+  noteList: Note[];
 }
 
 export default function Page() {
@@ -42,16 +42,25 @@ export default function Page() {
   const [isTodoComponent, setIsTodoComponent] = useState(false);
   const [isUnsyncedComponent, setIsUnsyncedComponent] = useState(false);
   const [isNoteBookComponent, setIsNoteBookComponent] = useState(false);
-  const [isNoteBookMemoComponent, setIsNoteBookMemoComponent] = useState(false);
+  const [isNoteDetailComponent, setIsNoteDetailComponent] = useState(false);
 
   // 메뉴 토글 상태 변수
   const [isMenuOpen, setIsMenuOpen] = useState(true);
-
+  // 노트북 List
+  const [noteBookList, setNoteBookList] = useState<NoteBook[]>(JSON.parse(localStorage.getItem("NotebookList") || "[]"));
+  // 내가 선택한 노트북의 idx
+  const [selectedNoteBookIdx, setSelectedNoteBookIdx] = useState(0);
+  // 노트 List
+  const [noteList, setNoteList] = useState<Note[]>([]);
+  // NoteIdx
+  const [selectedNoteIdx, setSelectedNoteIdx] = useState(0);
+  // 다크모드 설정 상태 변수
+  const [screenMode, SetScreenMode] = useState("nomal");
   // 메모 추가 모달 가시성 상태 변수
   const [isNoteAddModalOpen, setIsNoteAddModalOpen] = useState(false);
 
-  // 노트북 삭제 모달 가시성 상태 변수
-  const [isNoteBookDeleteModal, setIsNoteBookDeleteModal] = useState(false);
+  // 메모 삭제 모달 가시성 상태 변수
+  const [isNoteDeleteModalOpen, setIsNoteDeleteModalOpen] = useState(false);
 
   // 컨펌 모달 가시성 상태 변수
   const [isConfirmModal, setIsConfirmModal] = useState(false);
@@ -60,16 +69,13 @@ export default function Page() {
   const [memoList, setMemoList] = useState<Note[]>([]);
 
   // 내가 선택한 노트북의 idx
-  const [selectNoteBookIdx, setselectNoteBookIdx] = useState(0);
+  const [selecNoteBookIdx, setSelecNoteBookIdx] = useState(0);
 
   // 선택한 노트의 idx
   const [selectMemoIdx, setSelectMemoIdx] = useState(0);
 
   // 다크모드 설정 상태 변수
   const [screenMode, SetScreenMode] = useState("nomal");
-
-  // NoteBooksList
-  const [noteList, setNoteList] = useState([]);
 
   // Menu 토글 이벤트
   const AllNotesToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -87,12 +93,11 @@ export default function Page() {
   const NavMenuToggle = () => {
     setIsMenuOpen(!isMenuOpen);
   };
-
   // 로컬에 저장된 데이터를 반영해주는 useEffect 훅
   useEffect(() => {
     const loadMemoList = () => {
-      const noteBookList = JSON.parse(localStorage.getItem("noteBookList") || "[]");
-      setMemoList(noteBookList);
+      const titleList = JSON.parse(localStorage.getItem("NotebookList") || "[]");
+      setNoteBookList(titleList);
     };
 
     loadMemoList();
@@ -104,6 +109,11 @@ export default function Page() {
     return () => clearInterval(intervalId);
   }, []);
 
+  // NoteBookList의 NoteList
+  useEffect(() => {
+    setNoteList(noteBookList.find((el) => el.idx === selectedNoteBookIdx)?.noteList ?? []);
+  }, [noteBookList, selectedNoteBookIdx]);
+
   // 사이드 메뉴 클릭 시 상태 업데이트
   const onClickAllNotesMenu = () => {
     setIsAllNotesComponent(true);
@@ -111,7 +121,9 @@ export default function Page() {
     setIsTodoComponent(false);
     setIsUnsyncedComponent(false);
     setIsNoteBookComponent(false);
-    setIsNoteBookMemoComponent(false);
+    setIsNoteDetailComponent(false);
+    setSelectedNoteBookIdx(0);
+    setSelectedNoteIdx(0);
   };
   const onClickUncategoriedMenu = () => {
     setIsUncategoriedComponent(true);
@@ -119,7 +131,7 @@ export default function Page() {
     setIsTodoComponent(false);
     setIsUnsyncedComponent(false);
     setIsNoteBookComponent(false);
-    setIsNoteBookMemoComponent(false);
+    setIsNoteDetailComponent(false);
   };
   const onClickTodoMenu = () => {
     setIsTodoComponent(true);
@@ -127,7 +139,7 @@ export default function Page() {
     setIsAllNotesComponent(false);
     setIsUnsyncedComponent(false);
     setIsNoteBookComponent(false);
-    setIsNoteBookMemoComponent(false);
+    setIsNoteDetailComponent(false);
   };
   const onClickUnsyncedMenu = () => {
     setIsUnsyncedComponent(true);
@@ -135,7 +147,7 @@ export default function Page() {
     setIsTodoComponent(false);
     setIsAllNotesComponent(false);
     setIsNoteBookComponent(false);
-    setIsNoteBookMemoComponent(false);
+    setIsNoteDetailComponent(false);
   };
   const onClickNoteBookMenu = () => {
     setIsNoteBookComponent(true);
@@ -143,29 +155,21 @@ export default function Page() {
     setIsUncategoriedComponent(false);
     setIsTodoComponent(false);
     setIsAllNotesComponent(false);
-    setIsNoteBookMemoComponent(false);
+    setIsNoteDetailComponent(false);
+    setSelectedNoteBookIdx(0);
+    setSelectedNoteIdx(0);
   };
   const onClickNoteBookDetail = (idx: any) => {
-    setIsNoteBookMemoComponent(true);
+    setIsNoteDetailComponent(true);
     setIsNoteBookComponent(false);
     setIsUnsyncedComponent(false);
     setIsUncategoriedComponent(false);
     setIsTodoComponent(false);
     setIsAllNotesComponent(false);
 
-    // idx = notebooklist의 idx
-    setselectNoteBookIdx(idx);
-  };
-
-  const onClickMemoDetail = (idx: any) => {
-    setIsNoteBookMemoComponent(true);
-    setIsNoteBookComponent(false);
-    setIsUnsyncedComponent(false);
-    setIsUncategoriedComponent(false);
-    setIsTodoComponent(false);
-    setIsAllNotesComponent(false);
     setSelectMemoIdx(idx);
-    console.log(noteList);
+    setSelecNoteBookIdx(idx);
+    // console.log(idx);
   };
   // const handleAllNotesLinkClick = () => {
   // };
@@ -176,14 +180,12 @@ export default function Page() {
 
   // 노트 추가 모달 열기
   const onClickOpenNoteAddModal = () => {
-    setIsNoteAddModalOpen(true);
+    setIsNoteAddModal(true);
   };
-
   // 노트 추가 모달 닫기
   const onClickCloseNoteAddModal = () => {
-    setIsNoteAddModalOpen(false);
+    setIsNoteAddModal(false);
   };
-
   // 노트북 삭제 모달 열기
   const onClickOpenNoteBookDelModal = (idx: any) => {
     setIsNoteBookDeleteModal(true);
@@ -195,23 +197,26 @@ export default function Page() {
     // console.log("memoList = ", memoList);
   };
 
-  // 노트북 삭제 이벤트
-  const onClickNoteBookDelete = () => {
+  //노트 삭제 모달 열기
+  const onClickOpenNoteDelModal = () => { };
+
+  // 로컬에 저장된 데이터 삭제하는 클릭 이벤트
+  const onClickMemoDelete = () => {
     const noteToDelete = JSON.parse(localStorage.getItem("DeleteNote") || "{}");
     const updatedMemoList = memoList.filter((memo) => memo.idx !== noteToDelete.idx);
 
     localStorage.setItem("noteBookList", JSON.stringify(updatedMemoList));
     setMemoList(updatedMemoList);
 
-    onClickCloseNoteBookDelModal();
+    onClickCloseNoteDelModal();
 
     // console.log(noteToDelete.id);
     // console.log(updatedMemoList);
   };
 
   // 노트 삭제 모달 닫기
-  const onClickCloseNoteBookDelModal = () => {
-    setIsNoteBookDeleteModal(false);
+  const onClickCloseNoteDelModal = () => {
+    setIsNoteDeleteModalOpen(false);
   };
 
   const addNewMemo = () => {
@@ -226,33 +231,19 @@ export default function Page() {
       setIsConfirmModal(true);
     } else {
       // 선택된 노트북의 인덱스를 찾아서 해당 노트북의 subMemoList에 새로운 메모를 추가
-      const updatedMemoList = storedMemoList.map((notebook: any) => {
-        if (notebook.idx === selectNoteBookIdx) {
-          const memoList = Array.isArray(notebook.memoList) ? notebook.memoList : [];
+      const updatedMemoList = storedMemoList.map((memo: any) => {
+        if (memo.idx === selecNoteBookIdx) {
+          const memoList = Array.isArray(memo.memoList) ? memo.memoList : [];
 
-          if (memoList[0]) {
-            console.log(11, memoList[0].memoContent);
-            console.log(22, memoList[0].memoSubTitle);
-            if (!memoList[0].memoSubTitle && !memoList[0].memoContent) {
-              return notebook;
-            } else {
-              const newMemo = {
-                memoidx: memoList.length + 1,
-                memoSubTitle: "",
-                memoContent: "",
-              };
-              return { ...notebook, memoList: [newMemo, ...memoList] };
-            }
-          } else {
-            const newMemo = {
-              memoidx: memoList.length + 1,
-              memoSubTitle: "",
-              memoContent: "",
-            };
-            return { ...notebook, memoList: [newMemo, ...memoList] };
-          }
+          // console.log("memo.memoList", memo.memoList);
+          const newMemo = {
+            memoidx: memo.memoList.length + 1,
+            memosubtitle: memoSubTitle,
+            memocontent: memoContent,
+          };
+          return { ...memo, memoList: [newMemo, ...memoList] };
         }
-        return notebook;
+        return memo;
       });
 
       // 로컬 스토리지와 상태를 업데이트
@@ -269,12 +260,27 @@ export default function Page() {
     setIsConfirmModal(false);
   };
 
+  // 로컬에 저장된 노트북 삭제 이벤트
+  const onClickNoteBookDelete = () => {
+    const noteToDelete = JSON.parse(localStorage.getItem("DeleteNoteBook") || "{}");
+    const updatedNoteBookList = noteBookList.filter((notebook) => notebook.idx !== noteToDelete.idx);
+    localStorage.setItem("NotebookList", JSON.stringify(updatedNoteBookList));
+    setNoteBookList(updatedNoteBookList);
+    onClickCloseNoteDelModal();
+  };
+
+  // 노트 삭제 모달 닫기
+  const onClickCloseNoteDelModal = () => {
+    setIsNoteBookDeleteModal(false);
+  };
+
   const AllNotesMenu = { display: isAllNotesVisible ? "flex" : "none" };
   const NoteBooksMenu = { display: isNoteBooks ? "flex" : "none" };
   const TagsMenu = { display: isTags ? "flex" : "none" };
   const clickimageSrc = isAllNotesVisible ? "/img/arrotw-right-bold.png" : "/img/arrotw-right-bold.png";
   const hoverImageSrc = isAllNotesVisible ? "/img/arrotw-right-bold-balck.png" : "/img/arrotw-right-bold-balck.png";
 
+  // 다크/기본 모드 설정 토글 이벤트
   const toggleDarkMode = () => {
     if (localStorage.getItem("theme") === "dark") {
       // 다크모드 -> 기본모드
@@ -295,14 +301,41 @@ export default function Page() {
     }
   }, []);
 
+  const addNewNote = () => {
+    // 노트북 리스트가 없을 경우
+    if (noteBookList.length === 0) {
+      setIsConfirmModal(true);
+    } else {
+      // 선택한 노트북이 없을 경우
+      if (!selectedNoteBookIdx) {
+        alert("select NoteBook");
+      } else {
+        // 새로운 노트가 있을 경우
+        if (noteList.find((el) => !el.title && !el.content)) {
+        } else {
+          // 새로운 노트가 없을 경우
+          localStorage.setItem(
+            "NotebookList",
+            JSON.stringify(
+              noteBookList.map((el) =>
+                el.idx === selectedNoteBookIdx ? { ...el, noteList: [{ idx: noteList.length + 1, title: "", content: "" }, ...noteList] } : el
+              )
+            )
+          );
+          // 새로운 노트에 포커스
+          setSelectedNoteIdx(noteList.length + 1);
+        }
+      }
+    }
+  };
+
   return (
     <>
       <div
-        className={`min-w-[1400px] max-w-[1920px] h-[100vh] dark:bg-gray-800  ${isNoteAddModalOpen ? "blur-sm" : ""} || ${
-          isNoteBookDeleteModal ? "blur-sm" : ""
-        } || ${isConfirmModal ? "blur-sm" : ""}`}
+        className={`min-w-[1400px] max-w-[1920px] h-[100vh] dark:bg-gray-800  ${isNoteAddModalOpen ? "blur-sm" : ""} || ${isNoteDeleteModalOpen ? "blur-sm" : ""
+          } || ${isConfirmModal ? "blur-sm" : ""}`}
       >
-        <header className="border-r-2 ">
+        <header className="border-r-2 border-b-2 ">
           <div id="top-header" className="w-full h-full flex justify-between ">
             <ul className="flex items-center ">
               <li className="pl-[16px] h-[32px]">
@@ -356,7 +389,7 @@ export default function Page() {
                 </button>
               </li>
               <li>
-                <button className="p-[10px] m-2 bg-blue-500 rounded-[5px] hover:bg-blue-600" onClick={addNewMemo}>
+                <button className="p-[10px] m-2 bg-blue-500 rounded-[5px] hover:bg-blue-600" onClick={addNewNote}>
                   <span className="text-white">New Note</span>
                 </button>
               </li>
@@ -386,7 +419,7 @@ export default function Page() {
         <main id="noteBook" className="flex min-w-[1400px] max-w-[1920px] h-full">
           <aside
             id="sideNavBar"
-            className="w-[250px] h-full transition-transform duration-700 ease-in-out  border-gray-200 border-r-2  border-y-2 dark:bg-gray-800 "
+            className="w-[250px] h-full transition-transform duration-700 ease-in-out  border-gray-200 border-r-2  border-b-2 dark:bg-gray-800 "
           >
             <div className="flex h-full">
               <nav className="flex">
@@ -394,7 +427,7 @@ export default function Page() {
                   <li className="w-full">
                     <ul className="flex justify-center flex-col dark:text-white">
                       <li onClick={onClickAllNotesMenu} className="flex items-center h-[40px] hover:bg-gray-100">
-                        <a href="#!" className="flex items-center dark:text-red-500">
+                        <div className="flex items-center w-full cursor-pointer dark:text-red-500">
                           <button onClick={AllNotesToggle}>
                             <Image
                               src={isAllNotesHover ? hoverImageSrc : clickimageSrc}
@@ -418,32 +451,32 @@ export default function Page() {
                             height={24}
                           />
                           All Notes
-                        </a>
+                        </div>
                       </li>
                       <li style={AllNotesMenu} className="  py-2 px-6 h-[40px] items-center hover:bg-gray-100 dark:hover:text-black">
-                        <a href="#!" onClick={onClickUncategoriedMenu} className={` ${commonNaviBarOption}`}>
+                        <button onClick={onClickUncategoriedMenu} className={` ${commonNaviBarOption}`}>
                           <Image src="/img/filte.png" alt="uncategorized-img" className="mr-[8px] h-[100%]" width={24} height={24} />
                           Uncategorized
-                        </a>
+                        </button>
                       </li>
                       <li style={AllNotesMenu} className="  py-2 px-6 h-[40px] items-center hover:bg-gray-100 dark:hover:text-black">
-                        <a href="#!" onClick={onClickTodoMenu} className={commonNaviBarOption}>
+                        <button onClick={onClickTodoMenu} className={commonNaviBarOption}>
                           <Image src="/img/check.png" alt="todo-img" className="mr-[8px]" width={24} height={24} />
                           Todo
-                        </a>
+                        </button>
                       </li>
                       <li style={AllNotesMenu} className="  py-2 px-6 h-[40px] items-center hover:bg-gray-100 dark:hover:text-black">
-                        <a href="#!" onClick={onClickUnsyncedMenu} className={commonNaviBarOption}>
+                        <button onClick={onClickUnsyncedMenu} className={commonNaviBarOption}>
                           <Image src="/img/cloud-off.png" alt="unsynced-img" className="mr-[8px]" width={24} height={24} />
                           Unsynced
-                        </a>
+                        </button>
                       </li>
                     </ul>
                   </li>
                   <li id="asd" className="">
                     <ul className="flex justify-center flex-col relative dark:text-white">
                       <li className="flex items-center h-[40px]">
-                        <a href="#!" className="flex items-center">
+                        <div className="flex items-center">
                           <button onClick={NoteBooksToggle} className="w-[24px] h-[24px]">
                             <Image
                               src={isNoteBooksHover ? hoverImageSrc : clickimageSrc}
@@ -459,10 +492,10 @@ export default function Page() {
                               }}
                             />
                           </button>
-                        </a>
-                        <a href="#!" onClick={onClickNoteBookMenu} className="flex w-full items-center h-full text-blue-800 dark:text-red-500">
+                        </div>
+                        <button onClick={onClickNoteBookMenu} className="flex w-full items-center h-full text-blue-800 dark:text-red-500">
                           NOTEBOOKS
-                        </a>
+                        </button>
                         {/* 메모 추가 버튼 */}
                         <button onClick={onClickOpenNoteAddModal} className="group flex items-center relative">
                           <Image
@@ -483,16 +516,17 @@ export default function Page() {
                           />
                         </button>
                       </li>
-                      {/* 내가 입력한 메모가 저장되야함 */}
-                      {memoList.map((item, idx) => (
+                      {/* 새로 추가된 노트북이 저장되야함 */}
+                      {noteBookList.map((notebook, idx) => (
                         <li style={NoteBooksMenu} key={idx} className="py-2 pl-6 pr-4 h-[40px] hover:bg-gray-100 justify-between dark:hover:text-black">
-                          <div
+                          <a
+                            href="#!"
                             onClick={() => onClickNoteBookDetail(item.idx)}
                             // onClick={() => console.log(idx)}
                             className={`truncate ${NotoBookNaviBarOption}`}
                           >
                             {item.title}
-                          </div>
+                          </a>
                           <button onClick={() => onClickOpenNoteBookDelModal(item.idx)}>
                             <Image src="/img/delete.png" alt="delete-img" width={24} height={24} />
                           </button>
@@ -503,7 +537,7 @@ export default function Page() {
                   <li className="">
                     <ul className="flex justify-center flex-col dark:text-white">
                       <li className="flex items-center  h-[40px]">
-                        <a href="#!" className="flex items-center ">
+                        <div className="flex items-center ">
                           <button onClick={TagsToggle}>
                             <Image
                               src={isTagsHover ? hoverImageSrc : clickimageSrc}
@@ -519,90 +553,74 @@ export default function Page() {
                               }}
                             />
                           </button>
-                        </a>
-                        <a href="#!" className="flex w-full items-center h-full text-blue-800 dark:text-red-500">
-                          TAGS
-                        </a>
+                        </div>
+                        <button className="flex w-full items-center h-full text-blue-800 dark:text-red-500">TAGS</button>
                       </li>
                       <li style={TagsMenu} className="py-2 pl-6 h-[40px] items-center hover:bg-gray-100 dark:hover:text-black">
-                        <a href="#!" className={NotoBookNaviBarOption}>
-                          #UpNote
-                        </a>
+                        <button className={NotoBookNaviBarOption}>#UpNote</button>
                       </li>
                     </ul>
                   </li>
                   <li className=" ml-6 h-[40px] flex items-center">
-                    <a href="#!" className="block text-blue-800 dark:text-red-500">
-                      TEMPLATES
-                    </a>
+                    <button className="flex w-full items-center h-full text-blue-800 dark:text-red-500">TEMPLATES</button>
                   </li>
                   <li className=" ml-6 h-[40px] flex items-center">
-                    <a href="#!" className="block text-blue-800 dark:text-red-500">
-                      TRASH
-                    </a>
+                    <button className="flex w-full items-center h-full text-blue-800 dark:text-red-500">TRASH</button>
                   </li>
                 </ul>
               </nav>
             </div>
           </aside>
           {isNoteBookComponent ? (
-            <NoteBook
-              onClickOpenNoteAddModal={onClickOpenNoteAddModal}
-              isMenuOpen={isMenuOpen}
-              onClickNoteBookDetail={onClickNoteBookDetail}
-              memoList={memoList}
-            />
+            <NoteBook isMenuOpen={isMenuOpen} onClickNoteBookDetail={onClickNoteBookDetail} memoList={memoList} />
           ) : (
             <div
-              className={`min-w-[1400px] max-w-[1920px] flex ${
-                isMenuOpen ? "" : "translate-x-[-250px]"
-              } transition-transform duration-500 ease-in-out z-3 bg-white w-full flex dark:bg-gray-800`}
+              className={`min-w-[1400px] max-w-[1920px] flex ${isMenuOpen ? "" : "translate-x-[-250px]"
+                } transition-transform duration-500 ease-in-out z-3 bg-white w-full flex dark:bg-gray-800`}
             >
-              <aside id="subMain" className="min-w-[250px] max-w-[250px] border-y-2 border-bg-gray-200">
+              <aside id="subMain" className="min-w-[250px] max-w-[250px] border-y-2 border-r-2 border-bg-gray-200">
                 {isUncategoriedComponent ? <Uncategorized /> : ""}
                 {isTodoComponent ? <Todo /> : ""}
                 {isUnsyncedComponent ? <Unsynced /> : ""}
-                {isAllNotesComponent ? <AllNotes memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} /> : ""}
+                {isAllNotesComponent ? (
+                  <AllNotes selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} onClickNoteBookDetail={onClickNoteBookDetail} screenMode={screenMode} />
+                ) : (
+                  ""
+                )}
                 {isNoteBookMemoComponent ? (
                   <NoteBookMemo
-                    selectNoteBookIdx={selectNoteBookIdx}
+                    selecNoteBookIdx={selecNoteBookIdx}
                     memoList={memoList}
-                    onClickMemoDetail={onClickMemoDetail}
+                    onClickNoteBookDetail={onClickNoteBookDetail}
                     screenMode={screenMode}
-                    setNoteList={setNoteList}
+                    onClickOpenNoteDelModal={onClickOpenNoteDelModal}
                   />
                 ) : (
                   ""
                 )}
               </aside>
-              {selectNoteBookIdx ? (
-                // 선택한 노트북이 있는 경우
-                memoList
-                  .filter((notebook) => notebook.idx === selectNoteBookIdx)
-                  .map((selectedNotebook, idx) =>
-                    selectedNotebook.memoList.length > 0 ? (
-                      // 선택한 노트북에 노트가 있는 경우
-                      <Editor key={idx} selectMemoIdx={selectMemoIdx} memoList={memoList} screenMode={screenMode} noteList={noteList} />
-                    ) : (
-                      // 선택한 노트북에 노트가 없는 경우
-                      <div className="w-full h-full flex items-center justify-center flex-col border-2 text-center" key={idx}>
-                        <p className="mt-[8px] text-gray-500">Have a thoyght to jot down? Tap on the button below.</p>
-                        <button className="mt-[8px] px-4 py-2 border-0 font-bold text-blue-400 hover:text-blue-700" onClick={addNewMemo}>
-                          New Note
-                        </button>
-                      </div>
-                    )
-                  )
-              ) : (
-                // 선택한 노트북이 없는 경우
-                <Editor selectMemoIdx={-1} memoList={memoList} screenMode={screenMode} noteList={noteList} />
+              {/* 에디터 */}
+
+              {/* 노트북안에 있는 메모리스트를 불러옴 */}
+              {/* 노트북 idx를 비교하여 선택한 idx의 memolist의 memoidx를 보여줌 */}
+              {memoList.map((memo: any, idx) =>
+                isNoteBookMemoComponent && selecNoteBookIdx === memo.idx ? (
+                  <Editor key={idx} selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} />
+                ) : (
+                  ""
+                )
               )}
+
+              {isAllNotesComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {isUncategoriedComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {isTodoComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
+              {isUnsyncedComponent ? <Editor selecNoteBookIdx={selecNoteBookIdx} memoList={memoList} screenMode={screenMode} /> : ""}
             </div>
           )}
         </main>
       </div>
       {isNoteAddModalOpen && <NoteAddModal onClickCloseNoteAddModal={onClickCloseNoteAddModal} />}
-      {isNoteBookDeleteModal && <NoteDeleteModal closeDelModal={onClickCloseNoteBookDelModal} noteBookDelete={onClickNoteBookDelete} />}
+      {isNoteDeleteModalOpen && <NoteDeleteModal closeDelModal={onClickCloseNoteDelModal} memoTitleDelete={onClickMemoDelete} />}
       {isConfirmModal && <ConfirmModal onClickOpenNoteAddModal={onClickOpenNoteAddModal} handleCancel={handleCancel} />}
     </>
   );

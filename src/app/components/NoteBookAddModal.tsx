@@ -1,52 +1,45 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 
-interface Note {
-  title: string;
+type Note = {
   idx: number;
+  title: string;
   content: string;
-  subtitle: string;
-  memoList: Array<{
-    memoSubTitle: string;
-    memoContent: string;
-    memoidx: number;
-  }>;
-}
+};
 
-function NoteAddModal({ onClickCloseNoteAddModal }: any) {
-  const [noteTitle, setNoteTitle] = useState(""); // 단일 메모의 제목을 저장
-  const [isTitle, setIsTitle] = useState(false);
+export default function NoteBookAddModal({ onClickCloseNoteAddModal }: any) {
+  const [noteBookTitle, setNoteBookTitle] = useState(""); // 노트북의 타이틀
+  const [isTitle, setIsTitle] = useState(false); // 노트북의 타이틀의 유무
 
   const onClickNoteCreate = () => {
     // 로컬 스토리지에서 저장된 메모 목록을 불러옵니다.
-    const savedMemos = JSON.parse(localStorage.getItem("noteBookList") || "[]");
-
+    const savedNoteBook = JSON.parse(localStorage.getItem("NotebookList") || "[]");
     // 새로운 메모를 만듭니다.
-    const newMemo = {
-      idx: savedMemos.length + 1,
-      title: noteTitle,
+    const newNoteBook: {
+      idx: number;
+      title: string;
+      noteList: Note[];
+    } = {
+      idx: savedNoteBook.length + 1,
+      title: noteBookTitle,
+      noteList: [],
       // 추가로 메모에 필요한 속성들을 여기에 추가할 수 있습니다.
-      memoList: [],
     };
 
     // 새로운 메모를 기존 메모 목록에 추가합니다.
-    const updatedMemos = [newMemo, ...savedMemos];
-
+    const updatedMemos = [newNoteBook, ...savedNoteBook];
     // 로컬 스토리지에 업데이트된 메모 목록을 저장합니다.
-    localStorage.setItem("noteBookList", JSON.stringify(updatedMemos));
+    localStorage.setItem("NotebookList", JSON.stringify(updatedMemos));
+    // localStorage.setItem("NoteBookNote", JSON.stringify(updatedMemos));
 
     onClickCloseNoteAddModal();
-
-    console.log("savedMemos", updatedMemos);
   };
 
   // iuput에 입력값이 없으면 create 버튼을 disabled로 변경
   const onChangeTitle = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
-    setNoteTitle(inputValue);
-
+    setNoteBookTitle(inputValue);
     setIsTitle(!!inputValue);
   };
-
   return (
     <div className="w-full h-full">
       <div className="absolute top-0 w-full h-full bg-gray-500 opacity-30"></div>
@@ -57,7 +50,7 @@ function NoteAddModal({ onClickCloseNoteAddModal }: any) {
             type="text"
             placeholder="제목을 입력하세요"
             className="pl-2 h-[40px] hover:ring-1 hover:ring-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 border-[1px] border-gray-400 rounded-[5px]"
-            value={noteTitle}
+            value={noteBookTitle}
             onChange={onChangeTitle}
           />
           <div className="flex justify-evenly mt-4">
@@ -77,5 +70,3 @@ function NoteAddModal({ onClickCloseNoteAddModal }: any) {
     </div>
   );
 }
-
-export default NoteAddModal;

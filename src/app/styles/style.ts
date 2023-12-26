@@ -1,5 +1,4 @@
 export const NotoBookNaviBarOption = `
-  w-full
   px-[16px]
   hover:bg-gray-100
 `;
